@@ -1,4 +1,6 @@
 import { Hono } from 'hono';
+import { imageRoutes } from './routes';
+import type { PlaylistStore } from './playlist';
 import type { Config } from './config';
 import { createAuth, type Auth, type AuthEnv } from './auth';
 import type { HealthResponse } from '../shared/contracts';
@@ -6,6 +8,7 @@ import type { HealthResponse } from '../shared/contracts';
 export interface AppDeps {
   config: Config;
   auth?: Auth;
+  store?: PlaylistStore;
 }
 
 export function createApp(deps: AppDeps): Hono<AuthEnv> {
@@ -15,5 +18,6 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
   app.post('/api/auth/login', auth.login);
   app.get('/api/auth/session', auth.getSession);
   app.post('/api/auth/logout', auth.write, auth.logout);
+  if (deps.store) imageRoutes(app, auth, deps.store);
   return app;
 }

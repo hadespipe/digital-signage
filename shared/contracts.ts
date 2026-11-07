@@ -18,3 +18,7 @@ export interface Playlist {
   version: number;
   images: Array<{ id: string; path: string }>;
 }
+
+export interface PlaylistOrderRequest {
+  ids: string[];
+}

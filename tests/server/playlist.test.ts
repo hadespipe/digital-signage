@@ -25,9 +25,9 @@ test('serializes capacity checks and rejects invalid batches/permutations withou
   const { store } = await setup();
   const before = await store.add([image, image, image, image]);
   await expect(store.add([image, image])).rejects.toMatchObject({ status: 409 });
-  for (const ids of [[], [before.images[0]!.id, before.images[0]!.id], ['unknown']]) await expect(store.reorder(ids)).rejects.toMatchObject({ status: 422 });
+  for (const ids of [[], before.images.map(() => before.images[0]!.id), ['unknown']]) await expect(store.reorder(ids)).rejects.toMatchObject({ status: 422 });
   await expect(store.remove('unknown')).rejects.toMatchObject({ status: 404 });
-  await expect(store.add([image, { ...image, bytes: new Uint8Array() }])).rejects.toThrow();
+  await expect(store.add([{ ...image, bytes: new Uint8Array() }])).rejects.toMatchObject({ status: 422 });
   expect(await store.read()).toEqual(before);
   const results = await Promise.allSettled([store.add([image]), store.add([image])]);
   expect(results.filter(item => item.status === 'fulfilled')).toHaveLength(1);
