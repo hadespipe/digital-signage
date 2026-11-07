@@ -5,10 +5,10 @@
     token = document.getElementById("token"),
     lan = document.getElementById("lan"),
     error = document.getElementById("error"),
-    image = document.getElementById("display"),
     status = document.getElementById("status");
   var configured = null,
     player = null,
+    imageView = null,
     hold = null,
     check = null,
     revision = 0,
@@ -54,8 +54,8 @@
     cancelCheck();
     if (player) player.stop();
     player = null;
-    image.hidden = true;
-    image.removeAttribute("src");
+    if (imageView) imageView.dispose();
+    imageView = null;
   }
   function start(value) {
     stop();
@@ -63,26 +63,26 @@
     close();
     status.hidden = false;
     status.textContent = "Connecting…";
+    imageView = Signage.createImageView(
+      document.getElementById("display"),
+      document.getElementById("display-next"),
+    );
     player = Signage.createPlayer({
       transport: Signage.createTransport({
         baseUrl: value.serverUrl,
         token: value.token,
       }),
       view: {
-        beginTransition: function () {},
-        clear: function () {
-          image.hidden = true;
-          image.removeAttribute("src");
-        },
+        beginTransition: imageView.beginTransition,
+        clear: imageView.clear,
         showImage: function (url) {
           recovered();
-          image.src = url;
-          image.hidden = false;
+          imageView.showImage(url);
           status.hidden = true;
         },
         showEmpty: function () {
           recovered();
-          image.hidden = true;
+          imageView.clear();
           status.hidden = false;
           status.textContent = "Please upload";
         },

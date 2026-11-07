@@ -27,6 +27,12 @@ declare global {
         showError(): void;
       };
     }): Player;
+    createImageView(base: HTMLImageElement, incoming: HTMLImageElement): {
+      showImage(url: string): void;
+      beginTransition(url: string, durationMs: number): void;
+      clear(): void;
+      dispose(): void;
+    };
     createTransport(options: { baseUrl?: string; token?: string }): Transport;
   };
 }
