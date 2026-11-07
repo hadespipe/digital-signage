@@ -78,8 +78,9 @@ scripts could not locate Bun, then passed after correcting PATH.
 The regenerated `.ipk` is 7,616 bytes, SHA-256
 `e646998da5879386eace8604ab1c18586d67e3a8ba77c62613a6c2de897753fc`.
 This supersedes the earlier package size/hash only; no new extraction or physical
-TV execution is claimed. Header navigation now uses the existing warm accent and
-shared visible keyboard-focus outline; the admin build passed for this CSS change.
+TV execution is claimed. A header-link contrast refinement was attempted, but final review found the
+selector does not match the current markup. That cosmetic change is not verified
+as effective and is recorded below as a nonblocking follow-up.
 
 `bun run test:e2e tests/e2e/tv.spec.ts tests/e2e/preview.spec.ts` passed
 16 tests in 57.6 seconds (the preceding focused run also passed 16 in 57.4s).
@@ -90,3 +91,32 @@ offline Back, automatic image/empty recovery, and preservation of edited setting
 After treating remote Enter on automatic settings as intentional interaction,
 `bun run test:e2e tests/e2e/tv.spec.ts --grep 'remote navigation|startup outage recovers unobscured editing'`
 passed 2 tests in 8.5 seconds; typecheck and diff whitespace checks passed again.
+
+
+## Controller final integration check — 2026-11-07
+
+On final source commit `fdfd869`, the controller independently ran:
+
+- `bun run typecheck`: PASS.
+- `bun test tests/server tests/player`: **44 passed, 0 failed, 190 assertions**.
+- `bun run build:admin`: PASS, 19 modules.
+- `bun run test:e2e`: **20 passed in 59.7 seconds** (full admin/preview/TV suite).
+- `bun run check:tv`: PASS for all four runtime scripts.
+- Read the generated IPK's real data archive with `ar`/`tarfile` and compared
+  `main.js`, `player.js`, `transport.js`, `settings.js`, `index.html`, `style.css`
+  and `appinfo.json` byte-for-byte with the final source: **all match**.
+- Actual configured local-server health, password login, authorized empty
+  playlist and built admin: all HTTP 200; no credentials printed.
+- Actual local-server Chromium desktop/mobile login smoke: PASS, no page errors
+  and no horizontal overflow at 390px.
+- `git diff --check`: PASS; local `.env` and uploaded `data/` remain ignored.
+
+Whole-branch review plus its single scoped fix review confirms both reproduced
+TV lifecycle findings addressed and no remaining Critical/Important findings.
+Nonblocking follow-up: `admin/src/style.css` targets `header nav a`, while the
+Preview link is directly under the header, so the contrast refinement does not
+take effect. The link remains functional; CSS polish is deferred.
+
+These final results supersede the earlier full-suite test count. Docker/Linux,
+physical TV and actual Chromium 79 gates remain open; this is local verification.
+See [implementation decisions](implementation-decisions.md) for rulings.
