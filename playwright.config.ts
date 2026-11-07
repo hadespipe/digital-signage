@@ -1,4 +1,6 @@
 import { defineConfig } from "@playwright/test";
+// Playwright sets FORCE_COLOR for workers; avoid inherited conflicting switches.
+delete process.env.NO_COLOR;
 export default defineConfig({
   testDir: "./tests/e2e",
   workers: 1,

@@ -11,7 +11,9 @@
     "test:server": "bun test tests/server",
     "test:e2e": "playwright test",
     "dev:admin": "vite --config admin/vite.config.ts",
-    "build:admin": "vite build --config admin/vite.config.ts"
+    "build:admin": "vite build --config admin/vite.config.ts",
+    "check:tv": "node scripts/check-tv.mjs",
+    "package:tv": "bun run check:tv && bun scripts/package-tv.ts"
   },
   "dependencies": {
     "hono": "4.13.17",
@@ -25,6 +27,8 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.2.1",
+    "@webos-tools/cli": "3.2.6",
+    "acorn": "8.19.0",
     "typescript": "7.0.2",
     "vite": "^8.3.6"
   }

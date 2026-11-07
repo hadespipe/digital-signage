@@ -46,6 +46,8 @@ test("preview uses real decoded images, advances and survives failures", async (
   expect(first).toMatch(/^blob:/);
   await expect(image).not.toHaveAttribute("src", first!, { timeout: 4000 });
   await page.route("**/api/playlist", (route) => route.abort());
+  const blockedSrc = await image.getAttribute("src");
+  await expect(image).not.toHaveAttribute("src", blockedSrc!, { timeout: 4000 });
   await page.waitForTimeout(5500);
   await expect(image).toBeVisible();
   await page.screenshot({ path: "test-results/preview.png" });
