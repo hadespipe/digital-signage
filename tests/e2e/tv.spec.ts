@@ -356,3 +356,6 @@ for (const content of ["image", "empty", "editing"])
       await expect.poll(() => page.evaluate(() => history.state)).toBeNull();
     }
   });
+
+import { crossfadeTests } from "./crossfade";
+crossfadeTests("tv");

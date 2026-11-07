@@ -23,10 +23,15 @@ function setup(images: string[] = []) {
   };
   let polls = 0;
   const shown: string[] = [];
+  const events: any[] = [];
+  let visible: string[] = [];
   const released: string[] = [];
   let errors = 0;
   let loader = (path: string): Promise<any> =>
-    Promise.resolve({ url: path, release: () => released.push(path) });
+    Promise.resolve({ url: path, release: () => {
+      expect(visible).not.toContain(path);
+      released.push(path);
+    } });
   const player = S.createPlayer({
     clock,
     transport: {
@@ -37,7 +42,9 @@ function setup(images: string[] = []) {
       loadImage: (path: string) => loader(path),
     },
     view: {
-      showImage: (url: string) => shown.push(url),
+      showImage: (url: string) => { visible = [url]; shown.push(url); events.push([now, "show", url]); },
+      beginTransition: (url: string, ms: number) => { visible.push(url); events.push([now, "fade", url, ms]); },
+      clear: () => { visible = []; events.push([now, "clear"]); },
       showEmpty: () => shown.push("empty"),
       showError: () => errors++,
     },
@@ -58,6 +65,7 @@ function setup(images: string[] = []) {
   return {
     player,
     shown,
+    events,
     released,
     advance,
     set: (value: any) => (manifest = value),
@@ -228,7 +236,7 @@ test("poll timeout aborts before retry without overlapping live requests", async
         throw Error("unused");
       },
     },
-    view: { showImage() {}, showEmpty() {}, showError() {} },
+    view: { showImage() {}, beginTransition() {}, clear() {}, showEmpty() {}, showError() {} },
   });
   player.start();
   for (const end of [4500, 5000, 9500, 10000]) {
@@ -289,5 +297,57 @@ test("restarting immediately after stop begins a fresh poll", async () => {
   await flush();
   expect(h.polls()).toBe(2);
   expect(h.shown).toEqual(["/api/images/a"]);
+  h.player.stop();
+});
+
+
+test("crossfade stays inside the two-second cycle", async () => {
+  const h = setup(["a", "b"]);
+  h.player.start();
+  await flush();
+  await h.advance(4000);
+  expect(h.events.filter(e => e[1] !== "clear")).toEqual([
+    [0, "show", "/api/images/a"],
+    [1700, "fade", "/api/images/b", 300],
+    [2000, "show", "/api/images/b"],
+    [3700, "fade", "/api/images/a", 300],
+    [4000, "show", "/api/images/a"],
+  ]);
+  h.player.stop();
+});
+test("one image never fades and stop during fade cannot commit stale work", async () => {
+  const one = setup(["a"]);
+  one.player.start(); await flush(); await one.advance(10000);
+  expect(one.events.filter(e => e[1] === "fade")).toEqual([]);
+  one.player.stop();
+  const h = setup(["a", "b"]);
+  h.player.start(); await flush(); await h.advance(1850);
+  expect(h.events.at(-1)).toEqual([1700, "fade", "/api/images/b", 300]);
+  h.player.stop();
+  expect(h.timers.size).toBe(0);
+  h.player.start(); await flush(); await h.advance(150);
+  expect(h.shown).toEqual(["/api/images/a", "/api/images/a"]);
+  h.player.stop();
+});
+for (const ids of [[], ["c", "d"]]) test(`activation during fade resets layers and cycle: ${ids}`, async () => {
+  const h = setup(["a", "b"]);
+  let ready!: (value: any) => void;
+  h.load(path => new Promise(resolve => {
+    if (path.endsWith("a")) ready = resolve;
+    else resolve({ url: path, release() {} });
+  }));
+  h.player.start(); await flush(); await h.advance(3200);
+  ready({url: "/api/images/a", release() {}}); await flush();
+  h.set({version: 2, images: ids.map(id => ({id, path: "/api/images/" + id}))});
+  h.load(path => Promise.resolve({url: path, release() {}}));
+  await h.advance(1800);
+  expect(h.events).toContainEqual([4900, "fade", "/api/images/b", 300]);
+  expect(h.events).toContainEqual([5000, "clear"]);
+  expect(h.shown.at(-1)).toBe(ids.length ? "/api/images/c" : "empty");
+  await h.advance(200);
+  expect(h.shown).not.toContain("/api/images/b");
+  await h.advance(1800);
+  if (ids.length) expect(h.events.at(-1)).toEqual([7000, "show", "/api/images/d"]);
+  else expect(h.events.filter(e => e[1] === "fade")).toHaveLength(1);
   h.player.stop();
 });

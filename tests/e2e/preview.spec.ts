@@ -80,3 +80,6 @@ test("initial connection failure is distinct from confirmed empty", async ({
   await expect(page.getByRole("alert")).toContainText("Could not connect");
   await expect(page.getByText("Please upload", { exact: true })).toHaveCount(0);
 });
+
+import { crossfadeTests } from "./crossfade";
+crossfadeTests("preview");

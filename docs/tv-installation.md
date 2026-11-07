@@ -14,6 +14,25 @@ Failures display a recoverable settings form with a generic connection/token err
 
 ## Pair and install
 
+### Slideshow crossfade (Issue #2)
+
+TV and browser preview use the same player and two-layer image renderer. The first
+image appears immediately; subsequent slides hold for 1,700 ms, then fade the
+incoming image over the opaque base with a linear 300 ms opacity transition.
+The player commits at the 2,000 ms boundary, including last-to-first wrap; it does
+not wait an extra 300 ms. A late display-image load retains the base and falls
+back to a cut at the boundary. Reduced motion disables fading while retaining the
+same cycle. New complete playlists replace immediately and reset the cycle;
+empty playlists clear both layers and show `Please upload`.
+
+Images still use `contain`; black letterboxing remains when aspect ratios differ.
+Issue #3 (fill/crop) is excluded. This package's crossfade has browser coverage
+and an ES2019 syntax check, but has **not** been installed or verified on the LG:
+the current device SSH authentication failed. Earlier physical-device checks
+below describe the previous immediate-cut implementation, not this crossfade.
+
+## Installation steps
+
 On the TV, install **Developer Mode** from LG Apps, sign in with an LG developer
 account, enable **Dev Mode Status**, and allow the requested restart. Open the
 Developer Mode app again and enable **Key Server**. Keep TV and workstation on the
