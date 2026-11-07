@@ -116,6 +116,46 @@ export function crossfadeTests(target: "tv" | "preview") {
     await expect(image).toBeVisible();
   });
 
+  test(`${target} mixed-aspect letterboxes fade to black instead of cutting`, async ({page}) => {
+    await openSlides(page, target);
+    const sources = await Promise.all([
+      {width: 160, height: 90, background: "red"},
+      {width: 90, height: 160, background: "blue"},
+    ].map(async dimensions => "data:image/png;base64," +
+      (await sharp({create: {...dimensions, channels: 3}}).png().toBuffer()).toString("base64")));
+    // An isolated renderer uses the shipped CSS; pause only its CSS animation for pixel sampling.
+    await page.evaluate(async ({sources, target}) => {
+      const container = document.createElement(target === "tv" ? "main" : "div");
+      container.id = "mixed-aspect";
+      if (target === "preview") container.className = "preview";
+      Object.assign(container.style, {position: "fixed", top: "0", left: "0", width: "100vw", height: "100vh", zIndex: "10"});
+      const base = document.createElement("img"), incoming = document.createElement("img");
+      base.className = incoming.className = "slide-image";
+      base.hidden = incoming.hidden = true;
+      container.append(base, incoming);
+      document.body.append(container);
+      const renderer = Signage.createImageView(base, incoming);
+      await new Promise<void>(resolve => {base.onload = () => resolve(); renderer.showImage(sources[0]);});
+      renderer.beginTransition(sources[1], 300);
+      (window as any).mixedRenderer = renderer;
+    }, {sources, target});
+    const incoming = page.locator('#mixed-aspect [data-slide="incoming"]');
+    await expect.poll(() => incoming.evaluate(node => node.getAnimations().length)).toBe(1);
+    await incoming.evaluate(node => {
+      const animation = node.getAnimations()[0];
+      animation.pause();
+      animation.currentTime = 150;
+    });
+    const screenshot = await page.locator("#mixed-aspect").screenshot();
+    const {data, info} = await sharp(screenshot).removeAlpha().raw().toBuffer({resolveWithObject: true});
+    const offset = (Math.floor(info.height / 2) * info.width + 2) * info.channels;
+    expect(data[offset]).toBeGreaterThan(90);
+    expect(data[offset]).toBeLessThan(170);
+    expect(data[offset + 1]).toBe(0);
+    expect(data[offset + 2]).toBe(0);
+    await page.evaluate(() => (window as any).mixedRenderer.dispose());
+  });
+
   for (const replacement of ["empty", "new"]) test(`${target} ${replacement} playlist interrupts an active fade safely`, async ({page}) => {
     await watchReleases(page);
     await openSlides(page, target);

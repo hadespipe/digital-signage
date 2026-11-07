@@ -302,6 +302,7 @@ footer {
   justify-content: center;
 }
 .preview img {
+  background: #000;
   position: absolute;
   top: 0;
   right: 0;

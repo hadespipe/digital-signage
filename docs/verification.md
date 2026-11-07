@@ -166,7 +166,7 @@ transport and DOM image rendering. `contain` is unchanged; Issue #3 is excluded.
 | --- | --- |
 | `bun run typecheck` | PASS |
 | `bun test tests/server tests/player` | PASS — 48 tests, 224 assertions |
-| `bun run test:e2e` | PASS — 32 tests, 1.9 minutes, Playwright Chromium 158 |
+| `bun run test:e2e` | PASS — 34 tests after review fix, 1.9 minutes, Playwright Chromium 158 |
 | `bun run build:admin` | PASS |
 | `bun run check:tv` | PASS — all five runtime scripts, including `image-view.js`, ES2019 |
 | `bun run package:tv` | PASS — official LG CLI |
@@ -190,9 +190,33 @@ renderer. A later forced delayed-readiness retest passed both views. One
 concurrent harness invocation failed because port 3187 was occupied; final runs
 were sequential and passed.
 
-Generated package: `dist/tv/com.hadespipe.digitalsignage_0.1.0_all.ipk`, 8,588 bytes,
-SHA-256 `3da971b432256b54b37a61de6a99c78b4361e2530cdbd91f46b414c728223ee6`.
+Generated package after the review fix: `dist/tv/com.hadespipe.digitalsignage_0.1.0_all.ipk`, 8,590 bytes,
+SHA-256 `5be603adb0944e59983141f19291c814a965a4ef7b6e2d047e9408e31652ac1a`.
 This supersedes earlier artifact hashes, not earlier device observations. No new
 physical-device fade/compositor/memory result is claimed. Re-pair the official
 CLI before installing this package and observing actual smoothness on the TV.
 Docker/Linux and the other earlier physical acceptance gaps remain unchanged.
+
+The independent whole-branch reviewer found one Important visual defect and no
+Critical/Minor findings: transparent incoming `contain` letterboxes exposed the
+old image at full intensity until commit. Added a mixed-aspect pixel regression
+for both views; both failed before the CSS fix (red channel 255 at the midpoint,
+expected 90–169) and passed after adding black backgrounds to both image layers.
+This preserves `contain` and gradually fades outgoing content in incoming
+letterbox areas toward black, rather than cutting those areas at commit.
+Typecheck, build, ES2019 check and packaging passed after this fix, and all five
+packaged runtime scripts plus HTML/CSS/appinfo matched the final source.
+
+After the review fix, the final full browser suite passed **34/34**, and the
+combined server/player suite passed **48/48 (224 assertions)**. No deferred Minor
+review findings. The review finding is verified by the RED→GREEN pixel tests and
+the full final suite, rather than a second reviewer run.
+
+Implementation rulings: used the existing dedicated feature branch without a
+separate checkout; scheduled fade-start and commit independently to preserve the
+commit boundary when a start callback is delayed; extracted one shared DOM
+renderer to keep cancellation/readiness behavior identical in both views. These
+tradeoffs mean no separate-checkout isolation, a delayed start can shorten the
+visible fade, and renderer changes affect both views. Physical compositor/memory
+behavior remains gated on hardware access; unchanged backend/deployment behavior
+keeps prior acceptance limits, with the server regression suite rerun.
