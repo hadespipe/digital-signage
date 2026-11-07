@@ -43,3 +43,21 @@ Admin build, player, end-to-end, TV compatibility and TV packaging scripts will
 be added with the tasks that implement them. This foundation does not yet
 include those applications, authentication, image handling, Docker verification,
 or an installable webOS package. No real-TV test has been performed.
+
+## Image administration
+
+Run `bun run build:admin` and `bun start`, then open the configured `PUBLIC_ORIGIN`.
+The Bun server serves the built admin and API from the same origin. The client
+uses only the HttpOnly session cookie and an in-memory CSRF token; server environment
+variables and TV credentials are never bundled.
+
+For Vite development, run Bun on port 3000 and `bun run dev:admin` in another terminal.
+Set `PUBLIC_ORIGIN=http://127.0.0.1:5173` and `ALLOW_LAN_HTTP=true` for that local
+session, then open exactly `http://127.0.0.1:5173`. Vite proxies `/api` to Bun;
+it preserves the browser Origin header so authentication checks match. For the
+built app on port 3000, change `PUBLIC_ORIGIN` back to `http://127.0.0.1:3000`.
+Production requires HTTPS. Never use a `VITE_` variable for credentials.
+
+Browser checks: `bunx playwright install chromium`, `bun run build:admin`, then
+`bun run test:e2e`. The harness starts a separate listener on 127.0.0.1:3187 with
+fresh temporary data and test credentials; do not run it against production.
