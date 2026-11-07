@@ -4,7 +4,7 @@
 
 Issue: https://github.com/hadespipe/digital-signage/issues/2
 
-สถานะ: ผู้ใช้อนุมัติแล้ว — กำลังจัดทำแผน implementation
+สถานะ: ผู้ใช้อนุมัติแล้ว — implementation อยู่บน branch `codex/slideshow-crossfade`; ผลตรวจบันทึกใน `docs/verification.md` แยกจากการยืนยันบนทีวีจริง
 
 ## เป้าหมายและขอบเขตที่ยืนยัน
 

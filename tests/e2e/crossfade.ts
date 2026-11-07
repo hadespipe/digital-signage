@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Route } from "@playwright/test";
 import sharp from "sharp";
 
 export async function openSlides(page: Page, target: "tv" | "preview") {
@@ -43,6 +43,20 @@ export async function midFade(page: Page) {
       }
       sample();
     }));
+}
+
+async function watchReleases(page: Page) {
+  await page.addInitScript(() => {
+    const revoke = URL.revokeObjectURL.bind(URL);
+    (window as any).releaseViolations = [];
+    (window as any).releasedImages = [];
+    URL.revokeObjectURL = url => {
+      if ([...document.querySelectorAll("img")].some(image => image.getAttribute("src") === url))
+        (window as any).releaseViolations.push(url);
+      (window as any).releasedImages.push(url);
+      revoke(url);
+    };
+  });
 }
 
 export function crossfadeTests(target: "tv" | "preview") {
@@ -101,4 +115,59 @@ export function crossfadeTests(target: "tv" | "preview") {
     await expect(page.locator('[data-slide="incoming"]')).toBeHidden();
     await expect(image).toBeVisible();
   });
+
+  for (const replacement of ["empty", "new"]) test(`${target} ${replacement} playlist interrupts an active fade safely`, async ({page}) => {
+    await watchReleases(page);
+    await openSlides(page, target);
+    let pending: Route | undefined;
+    await page.route("**/api/playlist", route => {pending = route;});
+    await expect.poll(() => Boolean(pending), {timeout: 6500}).toBe(true);
+    const fade = await midFade(page);
+    await pending!.fulfill({json: {version: 701, images: replacement === "empty" ? [] : [
+      {id: "new", path: "/api/images/new"},
+    ]}});
+    if (replacement === "empty") await expect(page.getByText("Please upload", {exact: true})).toBeVisible();
+    else await expect(page.getByRole("img", {name: "Display image", exact: true}))
+      .not.toHaveAttribute("src", fade.base);
+    await page.waitForTimeout(450);
+    await expect(page.locator('[data-slide="incoming"]')).toBeHidden();
+    if (replacement === "empty") {
+      await expect(page.locator('[data-slide="base"]')).toBeHidden();
+      await expect(page.getByText("Please upload", {exact: true})).toBeVisible();
+    } else {
+      const current = await page.getByRole("img", {name: "Display image", exact: true}).getAttribute("src");
+      expect(current).not.toBe(fade.base);
+      expect(current).not.toBe(fade.incoming);
+    }
+    expect(await page.evaluate(() => (window as any).releasedImages.length)).toBe(2);
+    expect(await page.evaluate(() => (window as any).releaseViolations)).toEqual([]);
+  });
+
+  test(`${target} leaving playback during fade cannot restore old images`, async ({page}) => {
+    await watchReleases(page);
+    await openSlides(page, target);
+    if (target === "tv") {
+      await page.keyboard.down("Enter");
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await page.keyboard.up("Enter");
+    }
+    const fade = await midFade(page);
+    if (target === "preview") {
+      await page.getByRole("link", {name: "Back to editor"}).click();
+      await expect(page).toHaveURL("http://127.0.0.1:3187/");
+      await page.waitForTimeout(400);
+      await expect(page.locator(".preview")).toHaveCount(0);
+    } else {
+      await page.getByRole("button", {name: "Save and play"}).click();
+      await expect(page.getByRole("dialog")).toBeHidden();
+      await page.waitForTimeout(400);
+      const current = await page.getByRole("img", {name: "Display image", exact: true}).getAttribute("src");
+      expect(current).not.toBe(fade.base);
+      expect(current).not.toBe(fade.incoming);
+      await expect(page.locator('[data-slide="incoming"]')).toBeHidden();
+      expect(await page.evaluate(() => (window as any).releasedImages.length)).toBe(2);
+      expect(await page.evaluate(() => (window as any).releaseViolations)).toEqual([]);
+    }
+  });
+
 }

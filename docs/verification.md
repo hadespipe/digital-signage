@@ -155,3 +155,44 @@ Still pending: Linux container/native Sharp/memory acceptance; manual remote
 virtual keyboard and root platform exit; trusted production HTTPS; portrait/EXIF
 visual checks; actual Wi-Fi disconnection/reconnection; TV power cycle, power-loss
 and long-duration soak. No broader physical-device claim is implied.
+
+## Crossfade implementation — 2026-11-07
+
+Branch `codex/slideshow-crossfade` implements approved Issue #2: linear 300 ms
+incoming-image fade inside the 2,000 ms cycle. TV and preview share timing,
+transport and DOM image rendering. `contain` is unchanged; Issue #3 is excluded.
+
+| Command/check | Actual crossfade result |
+| --- | --- |
+| `bun run typecheck` | PASS |
+| `bun test tests/server tests/player` | PASS — 48 tests, 224 assertions |
+| `bun run test:e2e` | PASS — 32 tests, 1.9 minutes, Playwright Chromium 158 |
+| `bun run build:admin` | PASS |
+| `bun run check:tv` | PASS — all five runtime scripts, including `image-view.js`, ES2019 |
+| `bun run package:tv` | PASS — official LG CLI |
+| IPK source comparison | PASS — renderer, player, main, HTML and CSS match source byte-for-byte |
+| `git diff --check` | PASS |
+| New crossfade on physical LG / Chromium 79 | **BLOCKED / NOT RUN** — configured LAN SSH port reachable, but official `ares-device --system-info` failed: `All configured authentication methods failed`; no new package installed |
+
+Fake-clock tests assert 1,700 ms fade start, 2,000/4,000 ms commits, wrap,
+0/1/5 states, stop/restart and complete/empty activation during fade. Browser
+tests sample actual intermediate opacity and overlapping decoded image layers;
+check linear 300 ms CSS duration, opaque base, wrap without more image requests,
+reduced motion and live preference changes, delayed-ready callbacks, playlist
+replacement/empty during fade, settings commit, navigation, and detachment before
+blob URL revocation. Existing admin, authorization, offline playback and settings
+regressions passed in the full suite.
+
+Browser setup initially failed because the matching Chromium binary was absent.
+After installing it, both new rendering tests failed against the Task 1
+immediate-cut views (`No intermediate crossfade frame`) and passed with the
+renderer. A later forced delayed-readiness retest passed both views. One
+concurrent harness invocation failed because port 3187 was occupied; final runs
+were sequential and passed.
+
+Generated package: `dist/tv/com.hadespipe.digitalsignage_0.1.0_all.ipk`, 8,588 bytes,
+SHA-256 `3da971b432256b54b37a61de6a99c78b4361e2530cdbd91f46b414c728223ee6`.
+This supersedes earlier artifact hashes, not earlier device observations. No new
+physical-device fade/compositor/memory result is claimed. Re-pair the official
+CLI before installing this package and observing actual smoothness on the TV.
+Docker/Linux and the other earlier physical acceptance gaps remain unchanged.
