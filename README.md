@@ -5,9 +5,12 @@ The React admin uploads/reorders/deletes up to five images; the TV displays whol
 images on black every two seconds and polls for changes every five seconds.
 Empty playlists show `Please upload`; network errors retain the in-memory set.
 
-The application, admin build and installable TV package are implemented and locally
-tested. Linux Docker/native sharp compatibility and real-TV/Chromium 79 acceptance
-remain pending. This repository has not been deployed to live hosting.
+The application, admin build and installable TV package are implemented and tested
+on Mac and the actual OLED48C1PTB (webOS 6.5.3, Chromium 79). Device checks cover
+installation, saved settings, empty/one/five images, two-second timing and continued
+playback during simulated request failures. Linux Docker/native sharp compatibility,
+manual physical remote/keyboard/exit, HTTPS and TV power-loss checks remain pending.
+This repository has not been deployed to live hosting.
 
 Use Bun 1.4.4 and Node for the pinned LG CLI:
 

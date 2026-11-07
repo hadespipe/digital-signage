@@ -145,7 +145,7 @@ Shared interfaces (implement at the task named):
 - [x] Write failing browser tests against the actual TV HTML: remote arrows navigate setup, OK activates controls, URL/token persist, hidden controls do not capture focus, and no settings overlay appears during normal playback. Use a browser-only TV harness served from a different origin from the API to exercise real CORS.
 - [x] Add tests for malformed URL, rejected production HTTP, wrong token, localStorage failure, and changed server/token while downloads are pending. Permit HTTP only through an explicit LAN-test setting, clearly labeled. Never render token in player status or errors.
 - [x] Implement HTML/CSS/JS targeting Chromium 79, with password-type token input, visible focus and recoverable setup errors. A long OK press (1500 ms) during playback opens settings; short OK does not. Back (webOS key 461) closes settings when configured; Back at the root hands exit to the webOS-supported platform behavior. Isolate platform calls behind a guard for browser tests and verify current LG guidance during implementation.
-- [ ] Add a compatibility check parsing JS with an ECMAScript 2019 ceiling, inspect used Web APIs against Chromium 79, and use a Chromium 79 build/emulator if available. Modern Playwright alone is not evidence of old-engine compatibility. Create valid PNG icons and appinfo; invoke official webOS packaging tools from `bun run package:tv`, output under ignored `dist/tv/` and inspect packaged metadata/assets. Fail clearly if CLI is missing.
+- [x] Add a compatibility check parsing JS with an ECMAScript 2019 ceiling, inspect used Web APIs against Chromium 79, and use a Chromium 79 build/emulator if available. Modern Playwright alone is not evidence of old-engine compatibility. Create valid PNG icons and appinfo; invoke official webOS packaging tools from `bun run package:tv`, output under ignored `dist/tv/` and inspect packaged metadata/assets. Fail clearly if CLI is missing.
 - [x] Run TV browser tests, `bun run check:tv` and `bun run package:tv`; expect green tests and a nonempty `.ipk`. Document unrun engine/hardware checks accurately. Commit: `feat: package LG webOS player`.
 
 ## Task 8: Docker verification, setup documentation and TV acceptance
@@ -182,9 +182,12 @@ Self-review completed: all approved spec sections map to Tasks 1–8; interface 
 
 Checked implementation/command-recording items mean the work and available local
 checks are complete; they do not imply blocked platform acceptance passed.
-Task 7 compatibility item remains open for actual Chromium 79 execution.
+Task 7 compatibility now includes actual packaged-app execution on the LG
+OLED48C1PTB (webOS 6.5.3, Chrome 79.0.3945.79).
 
 - [ ] Linux Docker/Bun/native sharp compatibility and memory acceptance (Docker unavailable).
-- [ ] Physical LG TV installation, remote/timing/recovery/Back and restart/power-loss acceptance.
+- [x] Physical LG installation, persistent configuration, 0/1/5 images and measured 2-second slides.
+- [x] Actual-engine simulated API-outage playback and synthetic settings long-OK/Back.
+- [ ] Manual physical remote/virtual keyboard/platform exit, trusted HTTPS and TV power-cycle acceptance.
 
 Full commands, results and artifact inspection: [verification](../../verification.md).

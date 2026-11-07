@@ -16,6 +16,9 @@ requirements imposed on the user.
 
 No Critical/Important review findings remain after the single consolidated final
 fix wave. Linux/native dependencies/memory sizing, old Chromium and physical LG
-acceptance were neither waived nor represented as passing. No hosting was
+acceptance were neither waived nor represented as passing before device access.
+Later device access verified the actual engine and the specific installation,
+persistence, slideshow and simulated-outage checks in `verification.md`; remaining
+manual/platform gates are still explicit. No hosting was
 provisioned, no app-store release was made and no automatic Developer Mode
 renewal was introduced.

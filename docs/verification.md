@@ -18,9 +18,10 @@ Dependencies are resolved by committed `bun.lock`; use `bun install --frozen-loc
 | Generated escaped Bun dotenv + actual listener/password login | PASS — login 200, shutdown exits 0; secrets were not printed |
 | `bun run test:container` | **BLOCKED / exit 1** — Docker executable unavailable |
 | Linux container Bun/native sharp compatibility + memory sizing | **NOT RUN** |
-| Chromium 79 engine/emulator | **NOT RUN** — modern Chromium is not old-engine evidence |
-| Physical TV install/remote/image/timing/recovery/Back | **NOT RUN** — Developer Mode SSH unavailable during discovery |
-| Physical TV restart/power loss and filesystem power-loss durability | **NOT RUN** |
+| Actual Chromium 79 engine | **PASS** — packaged app on physical LG, Chrome 79.0.3945.79; see device observations below |
+| Physical TV install/image/timing/recovery | **PASS** for the checks recorded below; manual physical remote/keyboard/platform exit still pending |
+| App close/relaunch settings persistence | **PASS** on physical LG |
+| Physical TV power cycle and filesystem power-loss durability | **NOT RUN** |
 
 The Docker smoke was written and executed before the Dockerfile implementation;
 it failed explicitly with `BLOCKED: Docker executable unavailable`. No Docker/VM
@@ -56,8 +57,8 @@ were interpolated; `\$` preserved the hash. The documented escaped generator was
 then used in a temporary env file to start the real server and authenticate.
 Docker raw env files intentionally use unescaped values instead.
 
-No live hosting, public deployment, Developer Mode auto-renewal or physical-TV
-acceptance is claimed. Complete the pending checklist in [TV installation](tv-installation.md)
+No live hosting, public deployment, Developer Mode auto-renewal or complete physical-TV
+acceptance is claimed. Only the device checks recorded below are established. Complete the pending checklist in [TV installation](tv-installation.md)
 and Linux gate in [deployment](deployment.md) before production acceptance.
 
 ## Final review fixes — 2026-11-07
@@ -118,5 +119,39 @@ Preview link is directly under the header, so the contrast refinement does not
 take effect. The link remains functional; CSS polish is deferred.
 
 These final results supersede the earlier full-suite test count. Docker/Linux,
-physical TV and actual Chromium 79 gates remain open; this is local verification.
+manual physical remote/keyboard/exit and TV power-cycle gates remain open. Actual
+Chromium 79 and the physical-device checks below were subsequently verified.
 See [implementation decisions](implementation-decisions.md) for rulings.
+
+
+## Actual LG device observations — 2026-11-07
+
+Using the official pinned LG CLI, paired the workstation, installed the exact
+verified `.ipk`, and launched `com.hadespipe.digitalsignage`. `ares-device -i`
+reported OLED48C1PTB, sdkVersion 6.5.3 and firmware 03.53.45. The app inspector's
+actual user agent reported Chrome/79.0.3945.79 WebAppManager. Device addresses,
+pairing credentials and TV read tokens are not recorded in this repository.
+
+- Submitted the app's real settings form on the device with the LAN test server
+  and read-only token. Actual authorized cross-origin requests succeeded; the
+  settings overlay closed and the empty view showed exactly `Please upload`.
+- Uploaded a temporary JPEG through the real server: the TV decoded 1600×900,
+  rendered with `object-fit: contain` and held one image stationary.
+- Added four distinct temporary JPEGs: the actual TV cycled five unique image
+  URLs, with four complete measured intervals of **2000, 2000, 2000, 2000 ms**.
+  Sampling used the actual TV's `performance.now()` at 100 ms intervals.
+- Simulated failure by blocking only this app's LAN API URLs through its
+  inspector (not disconnecting the household Wi-Fi). Over 6.5 seconds, three
+  further image changes remained visible with the settings panel hidden.
+- Removed the request block and deleted the temporary test images: zero images
+  remained and the TV returned to unobscured `Please upload`.
+- Closed/relaunched this app through the CLI: stored configuration and token
+  persisted, playback reconnected without opening setup. Synthetic Enter hold
+  and key 461 events in the actual engine opened/closed settings and the token
+  input remained masked. These are not manual physical-remote tests.
+- Captured and inspected actual device screenshots of empty and image playback.
+
+Still pending: Linux container/native Sharp/memory acceptance; manual remote
+virtual keyboard and root platform exit; trusted production HTTPS; portrait/EXIF
+visual checks; actual Wi-Fi disconnection/reconnection; TV power cycle, power-loss
+and long-duration soak. No broader physical-device claim is implied.
