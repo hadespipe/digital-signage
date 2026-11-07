@@ -12,7 +12,9 @@ A planned web admin and LG webOS TV app for displaying an image slideshow.
 
 ## Status
 
-Design draft only. Application implementation has not started.
+Specifications approved on 2026-11-07. Application implementation has not started.
+
+See the [implementation plan](docs/superpowers/plans/2026-11-07-digital-signage.md) for implementation tasks and verification.
 
 ## Confirmed technology stack
 
