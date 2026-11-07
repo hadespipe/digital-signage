@@ -1,0 +1,9 @@
+.DS_Store
+.obsidian/
+node_modules/
+.env
+.env.*
+!.env.example
+data/
+uploads/
+*.log
