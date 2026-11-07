@@ -13,3 +13,8 @@ export interface LoginRequest {
 export interface ErrorResponse {
   error: { code: string; message: string };
 }
+
+export interface Playlist {
+  version: number;
+  images: Array<{ id: string; path: string }>;
+}

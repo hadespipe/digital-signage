@@ -10,7 +10,8 @@
     "test:server": "bun test tests/server"
   },
   "dependencies": {
-    "hono": "4.13.17"
+    "hono": "4.13.17",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@types/bun": "1.4.4",
