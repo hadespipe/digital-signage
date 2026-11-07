@@ -69,6 +69,11 @@
         token: value.token,
       }),
       view: {
+        beginTransition: function () {},
+        clear: function () {
+          image.hidden = true;
+          image.removeAttribute("src");
+        },
         showImage: function (url) {
           recovered();
           image.src = url;

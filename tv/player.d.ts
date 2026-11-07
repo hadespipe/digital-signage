@@ -21,6 +21,8 @@ declare global {
       };
       view: {
         showImage(url: string): void;
+        beginTransition(url: string, durationMs: number): void;
+        clear(): void;
         showEmpty(): void;
         showError(): void;
       };

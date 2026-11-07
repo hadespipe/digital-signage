@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 // Both bundles execute the identical classic-script namespace; no second player implementation.
 import "../../tv/player.js";
 import "../../tv/transport.js";
 export function Preview() {
+  const image = useRef<HTMLImageElement>(null);
   const [state, setState] = useState<{
     url?: string;
     message?: string;
@@ -12,6 +13,10 @@ export function Preview() {
     const player = Signage.createPlayer({
       transport: Signage.createTransport({}),
       view: {
+        beginTransition() {},
+        clear() {
+          image.current?.removeAttribute("src");
+        },
         showImage: (url) => setState({ url }),
         showEmpty: () => setState({ message: "Please upload" }),
         showError: () =>
@@ -27,7 +32,7 @@ export function Preview() {
         ← Back to editor
       </a>
       {state.url ? (
-        <img src={state.url} alt="Display image" />
+        <img ref={image} src={state.url} alt="Display image" />
       ) : (
         <p role={state.error ? "alert" : "status"}>{state.message}</p>
       )}

@@ -13,6 +13,8 @@
       key = null;
     var pollTimer,
       slideTimer,
+      commitTimer,
+      slideRevision = 0,
       pollController,
       loadController,
       polling = false;
@@ -46,10 +48,22 @@
         });
       });
     }
+    function cancelSlide() {
+      slideRevision++;
+      clock.clearTimeout(slideTimer);
+      clock.clearTimeout(commitTimer);
+    }
     function slide() {
       if (!running || active.length < 2) return;
+      var revision = slideRevision,
+        next = (index + 1) % active.length;
       slideTimer = clock.setTimeout(function () {
-        index = (index + 1) % active.length;
+        if (running && revision === slideRevision)
+          view.beginTransition(active[next].url, 300);
+      }, 1700);
+      commitTimer = clock.setTimeout(function () {
+        if (!running || revision !== slideRevision) return;
+        index = next;
         view.showImage(active[index].url);
         slide();
       }, 2000);
@@ -119,7 +133,8 @@
       Promise.all(downloads)
         .then(function (items) {
           if (!running || current !== generation || discarded) return;
-          clock.clearTimeout(slideTimer);
+          cancelSlide();
+          view.clear();
           var previous = active;
           active = items;
           loaded = [];
@@ -172,7 +187,8 @@
         polling = false;
         generation++;
         clock.clearTimeout(pollTimer);
-        clock.clearTimeout(slideTimer);
+        cancelSlide();
+        view.clear();
         if (pollController) pollController.abort();
         if (cancelPending) cancelPending();
         cancelPending = null;
