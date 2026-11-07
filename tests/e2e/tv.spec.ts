@@ -68,14 +68,14 @@ test('changing settings stops pending old downloads', async ({ page }) => {
   await page.route('**/api/playlist', route => route.fulfill({ json: { version: 50, images: [{ id: 'pending', path: '/api/images/pending' }] } }));
   let requested = false, aborted = false;
   page.on('requestfailed', request => { if (request.url().endsWith('/api/images/pending')) aborted = true; });
-  await page.route('**/api/images/pending', async route => { requested = true; await new Promise(resolve => setTimeout(resolve, 3000)); await route.abort().catch(() => {}); });
+  await page.route('**/api/images/pending', async route => { requested = true; return; });
   await expect.poll(() => requested, { timeout: 8000 }).toBe(true);
   await page.keyboard.down('Enter'); await page.waitForTimeout(1600); await page.keyboard.up('Enter');
   await page.unroute('**/api/playlist');
   await page.getByLabel('TV token').fill('wrong-new-token');
   await page.getByRole('button', { name: 'Save and play' }).click();
   await expect(page.getByRole('alert')).toContainText('connection and TV token');
-  await expect.poll(() => aborted).toBe(true);
+  await expect.poll(() => aborted, { timeout: 1000 }).toBe(true);
   await expect(page.getByRole('img')).toBeHidden();
 });
 
@@ -85,4 +85,52 @@ test('rejected saved credentials reopen recoverable settings on initial load', a
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('alert')).toContainText('connection and TV token');
   await expect(page.getByRole('alert')).not.toContainText('invalid-saved-token');
+});
+async function openSettings(page: import('@playwright/test').Page) {
+  await page.keyboard.down('Enter'); await page.waitForTimeout(1600); await page.keyboard.up('Enter');
+  await expect(page.getByRole('dialog')).toBeVisible();
+}
+async function remoteBack(page: import('@playwright/test').Page) {
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 461, bubbles: true })));
+}
+for (const failure of ['token', 'storage']) test(`Back restores configured playback after ${failure} failure`, async ({ page }) => {
+  await setup(page);
+  await expect(page.getByText('Please upload', { exact: true })).toBeVisible();
+  await openSettings(page);
+  if (failure === 'token') await page.getByLabel('TV token').fill('wrong');
+  else await page.evaluate(() => { Storage.prototype.setItem = () => { throw Error('storage'); }; });
+  await page.getByRole('button', { name: 'Save and play' }).click();
+  await expect(page.getByRole('alert')).toContainText(failure === 'token' ? 'connection and TV token' : 'storage');
+  let reads = 0;
+  page.on('request', req => { if (req.url().endsWith('/api/playlist')) reads++; });
+  await remoteBack(page);
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect.poll(() => reads, { timeout: 1500 }).toBeGreaterThan(0);
+  await expect(page.getByText('Please upload', { exact: true })).toBeVisible();
+});
+test('Back cancels pending validation and keeps original settings', async ({ page }) => {
+  await setup(page); await expect(page.getByText('Please upload', { exact: true })).toBeVisible();
+  await openSettings(page);
+  let pending = false;
+  await page.route('**/api/playlist', route => { if (route.request().headers().authorization === 'Bearer pending-token') { pending = true; return; } return route.continue(); });
+  await page.getByLabel('TV token').fill('pending-token');
+  const canceled = page.waitForEvent('requestfailed', { predicate: req => req.headers().authorization === 'Bearer pending-token', timeout: 2000 });
+  await page.getByRole('button', { name: 'Save and play' }).click();
+  await expect.poll(() => pending).toBe(true);
+  await remoteBack(page);
+  await canceled;
+  await expect(page.getByRole('dialog')).toBeHidden();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('digital-signage-settings')!).token)).toBe('tv-e2e-token');
+});
+test('successful settings save returns to root history before platform Back', async ({ page }) => {
+  await page.goto(tv + '/icon.png');
+  await setup(page); await expect(page.getByRole('dialog')).toBeHidden();
+  for (let i = 0; i < 2; i++) {
+    await openSettings(page);
+    await page.getByRole('button', { name: 'Save and play' }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => history.state)).toBeNull();
+  }
+  await page.evaluate(() => history.back());
+  await expect(page).toHaveURL(tv + '/icon.png');
 });

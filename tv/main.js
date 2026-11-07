@@ -1,8 +1,9 @@
 (function(root){
   var panel=document.getElementById('settings'), form=document.getElementById('form'), server=document.getElementById('server'), token=document.getElementById('token'), lan=document.getElementById('lan'), error=document.getElementById('error'), image=document.getElementById('display'), status=document.getElementById('status');
-  var configured=null,player=null,hold=null,check=null,revision=0;
-  function open(message){panel.hidden=false;error.textContent=message||'';server.focus();}
-  function close(){panel.hidden=true;document.activeElement.blur();}
+  var configured=null,player=null,hold=null,check=null,revision=0,settingsEntry=false;
+  function open(message){if(panel.hidden&&configured&&!settingsEntry){history.pushState({settings:true},'');settingsEntry=true;}panel.hidden=false;error.textContent=message||'';server.focus();}
+  function close(){panel.hidden=true;document.activeElement.blur();if(settingsEntry){settingsEntry=false;history.back();}}
+  function returnToPlayback(){stop();server.value=configured.serverUrl;token.value=configured.token;lan.checked=configured.allowLanHttp;start(configured);}
   function stop(){revision++;if(check)check.abort();check=null;if(player)player.stop();player=null;image.hidden=true;image.removeAttribute('src');}
   function start(value){
     stop();configured=value;close();status.hidden=false;status.textContent='Connecting…';
@@ -26,12 +27,12 @@
   });
   // Keep LG's default history-based Back behavior enabled. At the root the
   // platform owns Back/exit; the settings state adds one history entry.
-  function showSettings(){if(panel.hidden){history.pushState({settings:true},'');open();}}
-  root.addEventListener('popstate',function(){if(configured)close();});
+  function showSettings(){if(panel.hidden)open();}
+  root.addEventListener('popstate',function(){settingsEntry=false;if(!panel.hidden&&configured)returnToPlayback();});
   root.addEventListener('keydown',function(event){
     var key=event.keyCode;
     if(key===13&&event.repeat){event.preventDefault();return;}
-    if(key===461){if(!panel.hidden&&configured){event.preventDefault();history.back();close();}return;}
+    if(key===461){if(!panel.hidden&&configured){event.preventDefault();if(settingsEntry)history.back();else returnToPlayback();}return;}
     if(panel.hidden){
       if(key===13&&!hold){event.preventDefault();hold=setTimeout(function(){hold=null;showSettings();},1500);}
       return;
