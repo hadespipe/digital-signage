@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import type { Playlist } from "../../shared/contracts";
 import * as api from "./api";
 import "./style.css";
+import { Preview } from "./Preview";
 
 function App() {
   const [ready, setReady] = useState(false);
@@ -100,27 +101,30 @@ function App() {
           ◧ <span>SIGNAGE</span>
         </a>
         {signedIn && (
-          <button
-            className="quiet"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              setError("");
-              try {
-                await api.logout();
-                setSignedIn(false);
-                setPlaylist(null);
-                setFiles([]);
-              } catch (error) {
-                if (!expired(error))
-                  setError("Could not log out. Please try again.");
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            Log out
-          </button>
+          <>
+            <a href="/preview">Preview display</a>
+            <button
+              className="quiet"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setError("");
+                try {
+                  await api.logout();
+                  setSignedIn(false);
+                  setPlaylist(null);
+                  setFiles([]);
+                } catch (error) {
+                  if (!expired(error))
+                    setError("Could not log out. Please try again.");
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Log out
+            </button>
+          </>
         )}
       </header>
       {!ready ? (
@@ -240,9 +244,6 @@ function App() {
                       {String(index + 1).padStart(2, "0")}
                     </span>
                   </p>
-                  <p className="identifier" title={image.id}>
-                    {image.id}
-                  </p>
                   <div className="actions">
                     <button
                       aria-label={`Move image ${index + 1} up`}
@@ -284,4 +285,6 @@ function App() {
     </main>
   );
 }
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  location.pathname === "/preview" ? <Preview /> : <App />,
+);

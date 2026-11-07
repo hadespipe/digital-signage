@@ -27,6 +27,7 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
       404,
     ),
   );
+  app.get("/preview", serveStatic({ path: "./dist/admin/index.html" }));
   app.get("/*", serveStatic({ root: "./dist/admin" }));
   return app;
 }
