@@ -7,11 +7,13 @@ Copy `.env.example` to `.env` and replace every credential/origin placeholder.
 Generate a password hash interactively without putting the password in shell history:
 
 ```sh
-bun -e 'const password = prompt("Admin password (input visible):"); if (!password) throw new Error("Password required"); console.log(await Bun.password.hash(password));'
+bun -e 'const password = prompt("Admin password (input visible):"); if (!password) throw new Error("Password required"); console.log((await Bun.password.hash(password)).replaceAll("$", "\\$"));'
 bun -e 'console.log(require("node:crypto").randomBytes(32).toString("hex"))'
 ```
 
-Paste the hash into `ADMIN_PASSWORD_HASH` and random token into `TV_READ_TOKEN` in
+The hash generator escapes each `$` as `\$` for Bun's dotenv parser (single
+quotes alone do not preserve hashes in the tested Bun version). Paste that escaped
+hash into `ADMIN_PASSWORD_HASH` and random token into `TV_READ_TOKEN` in
 `.env`. These outputs are secrets; do not save them in source control or logs.
 The TV token must be separate from the administrator credential. It accepts at
 least 32 URL-safe characters; use the generator rather than a memorable value.
@@ -35,14 +37,29 @@ bun run typecheck
 ```
 
 Only `server/index.ts` opens a listener, on `0.0.0.0`, so LAN devices can reach
-it. `createApp({ config })` returns an isolated Hono app for in-process tests;
-its dependency interface will receive typed auth/store services in later tasks.
+it. `createApp({ config, store })` supports isolated in-process tests.
 `GET /api/health` returns exactly `{"ok":true}` and no configuration.
 
-Admin build, player, end-to-end, TV compatibility and TV packaging scripts will
-be added with the tasks that implement them. This foundation does not yet
-include those applications, authentication, image handling, Docker verification,
-or an installable webOS package. No real-TV test has been performed.
+Run all local checks from a clean checkout:
+
+```sh
+bun run typecheck
+bun run test:server
+bun run test:player
+bun run build:admin
+bunx playwright install chromium
+bun run test:e2e
+bun run check:tv
+bun run package:tv
+bun run test:container # requires working Docker; fails explicitly when unavailable
+```
+
+Open the built admin at the exact configured origin. The Preview link uses the
+same slideshow engine as the TV. Add JPEG, PNG or static WebP files (at most five
+active, 10 MiB each), reorder/delete, then enter the server origin and distinct TV
+read token on the TV. Runtime data belongs in the ignored `data/` directory.
+See [deployment](deployment.md) for Docker, startup/shutdown, backups and rotation,
+and [verification](verification.md) for actual acceptance limits.
 
 ## Image administration
 

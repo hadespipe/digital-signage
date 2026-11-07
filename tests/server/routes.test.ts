@@ -38,7 +38,7 @@ test('zero, one and five uploads, image bytes, reorder and delete',async()=>{
 });
 test('invalid batches are atomic, unknown ids safe, session origin and csrf required',async()=>{
  const s=await setup();expect((await s.upload([png,new TextEncoder().encode('spoofed MIME secret /tmp/path')])).status).toBe(422);expect((await s.store.read()).images).toHaveLength(0);
- for(const headers of [{},{...s.headers,Origin:'https://evil.test'},{...s.headers,'X-CSRF-Token':'wrong'}])expect((await s.app.request('/api/images',{method:'POST',headers})).status).not.toBe(201);
+ for(const [headers,status] of [[{},401],[{...s.headers,Origin:'https://evil.test'},403],[{...s.headers,'X-CSRF-Token':'wrong'},403]] as const)expect((await s.app.request('/api/images',{method:'POST',headers})).status).toBe(status);
  for(const id of ['unknown','..%2Fsecret']){const r=await s.app.request(`/api/images/${id}`,{headers:tv});expect(r.status).toBe(404);expect(await r.text()).not.toContain('/tmp');}
 });
 test('file and streamed total limits are enforced',async()=>{
@@ -55,4 +55,17 @@ test('five-file batch succeeds atomically and invalid order is unchanged',async(
 test('unexpected storage failures return a safe response',async()=>{
  const s=await setup();s.store.read=async()=>{throw new Error(`/private/data ${config.tvReadToken}`);};
  const r=await s.app.request('/api/playlist',{headers:tv});expect(r.status).toBe(500);expect(await r.json()).toEqual({error:{code:'HTTP_500',message:'Internal server error'}});
+});
+
+test('third buffered upload is rejected and failed bodies release admission',async()=>{
+ const s=await setup();
+ const controllers:ReadableStreamDefaultController<Uint8Array>[]=[];
+ const pending=()=>s.app.request('/api/images',{method:'POST',headers:{...s.headers,'Content-Type':'multipart/form-data; boundary=x'},body:new ReadableStream<Uint8Array>({start(c){controllers.push(c);}}),duplex:'half'} as RequestInit);
+ const first=pending(),second=pending();
+ // Both requests enter body reads before the next event-loop turn.
+ await new Promise(resolve=>setTimeout(resolve,0));
+ expect((await s.upload()).status).toBe(429);
+ for(const controller of controllers)controller.close();
+ expect((await first).status).toBe(400);expect((await second).status).toBe(400);
+ expect((await s.upload()).status).toBe(201);
 });

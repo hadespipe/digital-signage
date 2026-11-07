@@ -13,7 +13,8 @@
     "dev:admin": "vite --config admin/vite.config.ts",
     "build:admin": "vite build --config admin/vite.config.ts",
     "check:tv": "node scripts/check-tv.mjs",
-    "package:tv": "bun run check:tv && bun scripts/package-tv.ts"
+    "package:tv": "bun run check:tv && bun scripts/package-tv.ts",
+    "test:container": "bun test tests/container"
   },
   "dependencies": {
     "hono": "4.13.17",
