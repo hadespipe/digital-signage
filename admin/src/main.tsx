@@ -33,7 +33,7 @@ function App() {
         setSignedIn(true);
         await refresh();
       } catch (error) {
-        if (!(error instanceof api.ApiError && error.status === 401))
+        if (!expired(error))
           setError("Could not connect. Reload to try again.");
       } finally {
         setReady(true);
@@ -139,7 +139,16 @@ function App() {
                 await api.login(password);
                 setPassword("");
                 setSignedIn(true);
-                await refresh();
+                try {
+                  await refresh();
+                } catch (playlistError) {
+                  if (!expired(playlistError)) {
+                    setPlaylist(null);
+                    setError(
+                      "Could not load the playlist. Reload to try again.",
+                    );
+                  }
+                }
               } catch (error) {
                 setError(
                   error instanceof api.ApiError && error.status === 401

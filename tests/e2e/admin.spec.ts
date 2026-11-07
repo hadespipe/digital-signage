@@ -95,3 +95,38 @@ test("static serving preserves API precedence and unknown API 404", async ({
   expect(missing.status()).toBe(404);
   expect(await missing.text()).not.toContain("<!doctype html>");
 });
+
+for (const phase of ["bootstrap", "post-login"] as const) {
+  test(`playlist 401 during ${phase} returns to login`, async ({ page }) => {
+    await page.goto("/");
+    if (phase === "bootstrap") {
+      await page.getByLabel("Password").fill("test-password");
+      await page.getByRole("button", { name: "Sign in" }).click();
+      await expect(
+        page.getByRole("heading", { name: "Image library" }),
+      ).toBeVisible();
+    }
+    await page.route("**/api/playlist", (route) =>
+      route.fulfill({
+        status: 401,
+        json: {
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication request rejected",
+          },
+        },
+      }),
+    );
+    if (phase === "bootstrap") {
+      await page.reload();
+    } else {
+      await page.getByLabel("Password").fill("test-password");
+      await page.getByRole("button", { name: "Sign in" }).click();
+    }
+    await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByRole("alert")).toContainText("Your session ended");
+    await expect(
+      page.getByRole("heading", { name: "Image library" }),
+    ).toHaveCount(0);
+  });
+}
