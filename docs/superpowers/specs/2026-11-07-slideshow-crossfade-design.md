@@ -4,7 +4,7 @@
 
 Issue: https://github.com/hadespipe/digital-signage/issues/2
 
-สถานะ: สเปคสำหรับตรวจและยืนยันก่อน implementation
+สถานะ: ผู้ใช้อนุมัติแล้ว — กำลังจัดทำแผน implementation
 
 ## เป้าหมายและขอบเขตที่ยืนยัน
 
