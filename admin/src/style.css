@@ -316,3 +316,11 @@ footer {
   padding: 10px 14px;
   border-radius: 5px;
 }
+
+header nav a {
+  color: #eab982;
+  text-underline-offset: 4px;
+}
+header nav a:hover {
+  color: #ffe0ba;
+}

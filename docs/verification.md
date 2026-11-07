@@ -59,3 +59,34 @@ Docker raw env files intentionally use unescaped values instead.
 No live hosting, public deployment, Developer Mode auto-renewal or physical-TV
 acceptance is claimed. Complete the pending checklist in [TV installation](tv-installation.md)
 and Linux gate in [deployment](deployment.md) before production acceptance.
+
+## Final review fixes — 2026-11-07
+
+Focused browser regressions first reproduced the review findings against the
+unchanged runtime: `bun run test:e2e tests/e2e/tv.spec.ts --grep 'offline loaded|startup outage'`
+failed four cases (loaded real image lost after Back with unchanged/failed
+settings; recovered image/empty still obscured by automatic settings); the edited
+form guard passed. This RED run was 4 failed / 1 passed, 44.0 seconds.
+
+After the fix, `bun run test:player` passed 10 tests / 34 assertions.
+`bun run typecheck`, `bun run check:tv`, `bun run package:tv`,
+`bun run build:admin`, and `git diff --check` passed. The package command also
+reran the ES2019 check. Commands ran with `$HOME/.bun/bin` added to PATH;
+initial player/package invocations without that PATH failed because nested
+scripts could not locate Bun, then passed after correcting PATH.
+
+The regenerated `.ipk` is 7,616 bytes, SHA-256
+`e646998da5879386eace8604ab1c18586d67e3a8ba77c62613a6c2de897753fc`.
+This supersedes the earlier package size/hash only; no new extraction or physical
+TV execution is claimed. Header navigation now uses the existing warm accent and
+shared visible keyboard-focus outline; the admin build passed for this CSS change.
+
+`bun run test:e2e tests/e2e/tv.spec.ts tests/e2e/preview.spec.ts` passed
+16 tests in 57.6 seconds (the preceding focused run also passed 16 in 57.4s).
+Coverage retains pending-validation Back, failed persistence, root-history save,
+old-download cancellation after held candidate validation/commit, real-image
+offline Back, automatic image/empty recovery, and preservation of edited settings.
+
+After treating remote Enter on automatic settings as intentional interaction,
+`bun run test:e2e tests/e2e/tv.spec.ts --grep 'remote navigation|startup outage recovers unobscured editing'`
+passed 2 tests in 8.5 seconds; typecheck and diff whitespace checks passed again.
